@@ -1,0 +1,14 @@
+/* eslint-disable */
+import * as Router from 'expo-router';
+
+export * from 'expo-router';
+
+declare module 'expo-router' {
+  export namespace ExpoRouter {
+    export interface __routes<T extends string | object = string> {
+      hrefInputParams: { pathname: Router.RelativePathString, params?: Router.UnknownInputParams } | { pathname: Router.ExternalPathString, params?: Router.UnknownInputParams } | { pathname: `/`; params?: Router.UnknownInputParams; } | { pathname: `/../components/AddMessageButton`; params?: Router.UnknownInputParams; } | { pathname: `/../components/CreateMessageModal`; params?: Router.UnknownInputParams; } | { pathname: `/../components/MessageCard`; params?: Router.UnknownInputParams; } | { pathname: `/../storage/messages`; params?: Router.UnknownInputParams; } | { pathname: `/../styles/mapStyles`; params?: Router.UnknownInputParams; } | { pathname: `/_sitemap`; params?: Router.UnknownInputParams; };
+      hrefOutputParams: { pathname: Router.RelativePathString, params?: Router.UnknownOutputParams } | { pathname: Router.ExternalPathString, params?: Router.UnknownOutputParams } | { pathname: `/`; params?: Router.UnknownOutputParams; } | { pathname: `/../components/AddMessageButton`; params?: Router.UnknownOutputParams; } | { pathname: `/../components/CreateMessageModal`; params?: Router.UnknownOutputParams; } | { pathname: `/../components/MessageCard`; params?: Router.UnknownOutputParams; } | { pathname: `/../storage/messages`; params?: Router.UnknownOutputParams; } | { pathname: `/../styles/mapStyles`; params?: Router.UnknownOutputParams; } | { pathname: `/_sitemap`; params?: Router.UnknownOutputParams; };
+      href: Router.RelativePathString | Router.ExternalPathString | `/${`?${string}` | `#${string}` | ''}` | `/../components/AddMessageButton${`?${string}` | `#${string}` | ''}` | `/../components/CreateMessageModal${`?${string}` | `#${string}` | ''}` | `/../components/MessageCard${`?${string}` | `#${string}` | ''}` | `/../storage/messages${`?${string}` | `#${string}` | ''}` | `/../styles/mapStyles${`?${string}` | `#${string}` | ''}` | `/_sitemap${`?${string}` | `#${string}` | ''}` | { pathname: Router.RelativePathString, params?: Router.UnknownInputParams } | { pathname: Router.ExternalPathString, params?: Router.UnknownInputParams } | { pathname: `/`; params?: Router.UnknownInputParams; } | { pathname: `/../components/AddMessageButton`; params?: Router.UnknownInputParams; } | { pathname: `/../components/CreateMessageModal`; params?: Router.UnknownInputParams; } | { pathname: `/../components/MessageCard`; params?: Router.UnknownInputParams; } | { pathname: `/../storage/messages`; params?: Router.UnknownInputParams; } | { pathname: `/../styles/mapStyles`; params?: Router.UnknownInputParams; } | { pathname: `/_sitemap`; params?: Router.UnknownInputParams; };
+    }
+  }
+}
