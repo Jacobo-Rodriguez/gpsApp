@@ -5,5 +5,5 @@ export type MapMessage = {
   longitude: number;
   text: string;
   createdAt: string;
-  imageUri?: string;
+  imageUrl?: string;
 };

@@ -2,10 +2,12 @@ import MapLibreGL from "@maplibre/maplibre-react-native";
 import * as Location from "expo-location";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator, Image, StyleSheet,
+  ActivityIndicator,
+  Image,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 import CreateMessageModal from "../components/CreateMessageModal";
@@ -24,15 +26,19 @@ export default function Home() {
 
   const [messages, setMessages] = useState<MapMessage[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [selectedMessage, setSelectedMessage] =
+    useState<MapMessage | null>(null);
 
   const cameraRef = useRef<any>(null);
 
-  // LOCATION TRACKING 
+  // LOCATION TRACKING
   useEffect(() => {
     let sub: Location.LocationSubscription;
 
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } =
+        await Location.requestForegroundPermissionsAsync();
+
       if (status !== "granted") {
         alert("Location permission is required");
         return;
@@ -59,7 +65,6 @@ export default function Home() {
     loadMessages().then(setMessages);
   }, []);
 
-  // LOADING STATE
   if (!ready || !coords) {
     return (
       <View style={styles.loader}>
@@ -69,7 +74,10 @@ export default function Home() {
   }
 
   // SAVE NEW MESSAGE
-  async function handleCreateMessage(text: string) {
+  async function handleCreateMessage(
+    text: string,
+    imageUrl?: string
+  ) {
     if (!coords) return;
 
     const newMessage: MapMessage = {
@@ -79,6 +87,7 @@ export default function Home() {
       longitude: coords.longitude,
       text,
       createdAt: new Date().toISOString(),
+      imageUrl,
     };
 
     await saveMessage(newMessage);
@@ -97,43 +106,74 @@ export default function Home() {
         zoomEnabled={false}
         logoEnabled={false}
         compassEnabled={false}
+        onPress={() => setSelectedMessage(null)} // tap map to close
       >
-        {/* 🎯 CAMERA — DO NOT TOUCH */}
         <MapLibreGL.Camera
           ref={cameraRef}
           followUserLocation
-          centerCoordinate={[coords.longitude, coords.latitude]}
+          centerCoordinate={[
+            coords.longitude,
+            coords.latitude,
+          ]}
           zoomLevel={18}
           minZoomLevel={16}
           maxZoomLevel={20}
           animationDuration={500}
         />
 
-        {/*USER LOCATION */}
         <MapLibreGL.UserLocation
           visible
           androidRenderMode="gps"
           showsUserHeadingIndicator
         />
 
-        {/*MESSAGE MARKERS */}
+        {/* MESSAGE MARKERS */}
         {messages.map((msg) => (
           <MapLibreGL.PointAnnotation
-          key={msg.id}
-          id={msg.id}
-          coordinate={[msg.longitude, msg.latitude]}
-          onSelected={() => alert(msg.text)}
-        >
-          <Image
-            source={require("../assets/images/marker.png")}
-            style={styles.markerImage}
-            resizeMode="contain"
-          />
-        </MapLibreGL.PointAnnotation>
+            key={msg.id}
+            id={msg.id}
+            coordinate={[msg.longitude, msg.latitude]}
+            onSelected={() => setSelectedMessage(msg)}
+          >
+            <Image
+              source={require("../assets/images/marker.png")}
+              style={styles.markerImage}
+              resizeMode="contain"
+            />
+          </MapLibreGL.PointAnnotation>
         ))}
       </MapLibreGL.MapView>
 
-      {/* ➕ ADD MESSAGE BUTTON */}
+      {/* MESSAGE POPUP */}
+      {selectedMessage && (
+        <View style={styles.messageOverlay}>
+          <View style={styles.messageBubble}>
+            {selectedMessage.imageUrl && (
+              <Image
+                source={{ uri: selectedMessage.imageUrl }}
+                style={styles.messageImage}
+                resizeMode="contain"
+              />
+            )}
+
+            {selectedMessage.text ? (
+              <Text style={styles.messageText}>
+                {selectedMessage.text}
+              </Text>
+            ) : null}
+
+            <TouchableOpacity
+              onPress={() => setSelectedMessage(null)}
+            >
+              <Text style={styles.closeText}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* ADD BUTTON */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setShowModal(true)}
@@ -141,7 +181,6 @@ export default function Home() {
         <Text style={styles.fabText}>＋</Text>
       </TouchableOpacity>
 
-      {/* 📝 CREATE MESSAGE MODAL */}
       <CreateMessageModal
         visible={showModal}
         onClose={() => setShowModal(false)}
@@ -151,19 +190,20 @@ export default function Home() {
   );
 }
 
-// 🎨 STYLES — UNCHANGED
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
+
   loader: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
+
   markerImage: {
-  width: 32,
-  height: 32,
-},
+    width: 32,
+    height: 32,
+  },
 
   fab: {
     position: "absolute",
@@ -177,9 +217,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 6,
   },
+
   fabText: {
     color: "#fff",
     fontSize: 32,
     lineHeight: 32,
+  },
+
+  messageOverlay: {
+    position: "absolute",
+    bottom: 100,
+    left: 20,
+    right: 20,
+    alignItems: "center",
+  },
+
+  messageBubble: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 16,
+    maxWidth: "90%",
+    elevation: 6,
+  },
+
+  messageImage: {
+    width: 250,
+    height: 250,
+    marginBottom: 10,
+    borderRadius: 12,
+  },
+
+  messageText: {
+    fontSize: 16,
+    textAlign: "center",
+  },
+
+  closeText: {
+    marginTop: 10,
+    textAlign: "center",
+    color: "#999",
   },
 });

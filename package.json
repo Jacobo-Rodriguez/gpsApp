@@ -23,6 +23,7 @@
     "expo-font": "~14.0.10",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",
+    "expo-image-picker": "~17.0.10",
     "expo-linking": "~8.0.11",
     "expo-location": "~19.0.8",
     "expo-router": "~6.0.21",
@@ -44,8 +45,6 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "eslint": "^4.1.1",
-    "eslint-config-expo": "^5.1.3",
     "typescript": "~5.9.2"
   },
   "private": true
