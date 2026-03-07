@@ -10,7 +10,10 @@ import {
   View,
 } from "react-native";
 
+import { useRootNavigationState, useRouter } from "expo-router";
+
 import CreateMessageModal from "../components/CreateMessageModal";
+import { useAuth } from "../context/AuthContext";
 import { loadMessages, saveMessage } from "../storage/messages";
 import { MAP_STYLES } from "../styles/mapStyles";
 import { MapMessage } from "../types/MapMessage";
@@ -18,7 +21,13 @@ import { MapMessage } from "../types/MapMessage";
 MapLibreGL.setAccessToken(null);
 
 export default function Home() {
+
+  const router = useRouter();
+  const navigationState = useRootNavigationState();
+
+  const { user } = useAuth();
   const [ready, setReady] = useState(false);
+
   const [coords, setCoords] = useState<{
     latitude: number;
     longitude: number;
@@ -26,16 +35,36 @@ export default function Home() {
 
   const [messages, setMessages] = useState<MapMessage[]>([]);
   const [showModal, setShowModal] = useState(false);
+
   const [selectedMessage, setSelectedMessage] =
     useState<MapMessage | null>(null);
 
   const cameraRef = useRef<any>(null);
 
-  // LOCATION TRACKING
+  /*
+  REDIRECT TO LOGIN IF NOT AUTHENTICATED
+  */
+
+useEffect(() => {
+  if (!navigationState?.key) return;
+
+  if (!user) {
+    requestAnimationFrame(() => {
+      router.replace("./login");
+    });
+  }
+}, [user, navigationState]);
+
+  /*
+  LOCATION TRACKING
+  */
+
   useEffect(() => {
+
     let sub: Location.LocationSubscription;
 
     (async () => {
+
       const { status } =
         await Location.requestForegroundPermissionsAsync();
 
@@ -55,12 +84,17 @@ export default function Home() {
           setReady(true);
         }
       );
+
     })();
 
     return () => sub?.remove();
+
   }, []);
 
-  // LOAD STORED MESSAGES
+  /*
+  LOAD STORED MESSAGES
+  */
+
   useEffect(() => {
     loadMessages().then(setMessages);
   }, []);
@@ -73,30 +107,48 @@ export default function Home() {
     );
   }
 
-  // SAVE NEW MESSAGE
+  /*
+  CREATE MESSAGE
+  */
+
   async function handleCreateMessage(
     text: string,
     imageUrl?: string
   ) {
-    if (!coords) return;
+
+    if (!coords || !user) return;
 
     const newMessage: MapMessage = {
+
       id: Date.now().toString(),
-      userId: "anonymous",
+
+      userId: user.id,
+      username: user.username,
+      avatar: user.avatar,
+
       latitude: coords.latitude,
       longitude: coords.longitude,
+
       text,
+
       createdAt: new Date().toISOString(),
+
       imageUrl,
+
     };
 
     await saveMessage(newMessage);
+
     setMessages((prev) => [...prev, newMessage]);
+
     setShowModal(false);
+
   }
 
   return (
+
     <View style={styles.container}>
+
       <MapLibreGL.MapView
         style={styles.map}
         mapStyle={MAP_STYLES.OSM_VOYAGER}
@@ -106,8 +158,9 @@ export default function Home() {
         zoomEnabled={false}
         logoEnabled={false}
         compassEnabled={false}
-        onPress={() => setSelectedMessage(null)} // tap map to close
+        onPress={() => setSelectedMessage(null)}
       >
+
         <MapLibreGL.Camera
           ref={cameraRef}
           followUserLocation
@@ -128,38 +181,75 @@ export default function Home() {
         />
 
         {/* MESSAGE MARKERS */}
+
         {messages.map((msg) => (
+
           <MapLibreGL.PointAnnotation
             key={msg.id}
             id={msg.id}
             coordinate={[msg.longitude, msg.latitude]}
             onSelected={() => setSelectedMessage(msg)}
           >
+
             <Image
               source={require("../assets/images/marker.png")}
               style={styles.markerImage}
               resizeMode="contain"
             />
+
           </MapLibreGL.PointAnnotation>
+
         ))}
+
       </MapLibreGL.MapView>
 
       {/* MESSAGE POPUP */}
+
       {selectedMessage && (
+
         <View style={styles.messageOverlay}>
+
           <View style={styles.messageBubble}>
+
+            {/* USER HEADER */}
+
+            <View style={styles.userHeader}>
+
+              {selectedMessage.avatar && (
+
+                <Image
+                  source={{ uri: selectedMessage.avatar }}
+                  style={styles.avatar}
+                />
+
+              )}
+
+              <Text style={styles.username}>
+                {selectedMessage.username}
+              </Text>
+
+            </View>
+
+            {/* IMAGE */}
+
             {selectedMessage.imageUrl && (
+
               <Image
                 source={{ uri: selectedMessage.imageUrl }}
                 style={styles.messageImage}
                 resizeMode="contain"
               />
+
             )}
 
+            {/* TEXT */}
+
             {selectedMessage.text ? (
+
               <Text style={styles.messageText}>
                 {selectedMessage.text}
               </Text>
+
             ) : null}
 
             <TouchableOpacity
@@ -169,16 +259,22 @@ export default function Home() {
                 Close
               </Text>
             </TouchableOpacity>
+
           </View>
+
         </View>
+
       )}
 
-      {/* ADD BUTTON */}
+      {/* ADD MESSAGE BUTTON */}
+
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setShowModal(true)}
       >
+
         <Text style={styles.fabText}>＋</Text>
+
       </TouchableOpacity>
 
       <CreateMessageModal
@@ -186,12 +282,17 @@ export default function Home() {
         onClose={() => setShowModal(false)}
         onSubmit={handleCreateMessage}
       />
+
     </View>
+
   );
+
 }
 
 const styles = StyleSheet.create({
+
   container: { flex: 1 },
+
   map: { flex: 1 },
 
   loader: {
@@ -240,6 +341,24 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
 
+  userHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+
+  username: {
+    fontWeight: "600",
+    fontSize: 15,
+  },
+
   messageImage: {
     width: 250,
     height: 250,
@@ -257,4 +376,5 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#999",
   },
+
 });
