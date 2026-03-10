@@ -1,42 +1,55 @@
-import * as ImagePicker from "expo-image-picker";
+import { router } from "expo-router";
 import { useState } from "react";
 import { Button, TextInput, View } from "react-native";
 import { registerUser } from "../storage/users";
 
 export default function RegisterScreen() {
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [avatar, setAvatar] = useState("");
-
-  async function pickAvatar() {
-    const result = await ImagePicker.launchImageLibraryAsync();
-
-    if (!result.canceled) {
-      setAvatar(result.assets[0].uri);
-    }
-  }
 
   async function handleRegister() {
-    const user = {
+
+    const newUser = {
       id: Date.now().toString(),
       username,
       email,
       password,
-      avatar,
+      avatar: "https://i.pravatar.cc/150"
     };
 
-    await registerUser(user);
+    await registerUser(newUser);
+
     alert("User created");
+
+    router.replace("./login");
   }
 
   return (
-    <View>
-      <TextInput placeholder="Username" onChangeText={setUsername} />
-      <TextInput placeholder="Email" onChangeText={setEmail} />
-      <TextInput placeholder="Password" secureTextEntry onChangeText={setPassword} />
-      <Button title="Pick avatar" onPress={pickAvatar} />
-      <Button title="Register" onPress={handleRegister} />
+    <View style={{ padding: 20 }}>
+
+      <TextInput
+        placeholder="Username"
+        onChangeText={setUsername}
+        style={{ borderWidth: 1, marginBottom: 10 }}
+      />
+
+      <TextInput
+        placeholder="Email"
+        onChangeText={setEmail}
+        style={{ borderWidth: 1, marginBottom: 10 }}
+      />
+
+      <TextInput
+        placeholder="Password"
+        secureTextEntry
+        onChangeText={setPassword}
+        style={{ borderWidth: 1, marginBottom: 10 }}
+      />
+
+      <Button title="Create account" onPress={handleRegister} />
+
     </View>
   );
 }

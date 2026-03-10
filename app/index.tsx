@@ -42,18 +42,31 @@ export default function Home() {
   const cameraRef = useRef<any>(null);
 
   /*
+  FORMAT DATE
+  */
+
+  function formatDate(date: string) {
+    const d = new Date(date);
+
+    return d.toLocaleString("es-MX", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  }
+
+  /*
   REDIRECT TO LOGIN IF NOT AUTHENTICATED
   */
 
-useEffect(() => {
-  if (!navigationState?.key) return;
+  useEffect(() => {
+    if (!navigationState?.key) return;
 
-  if (!user) {
-    requestAnimationFrame(() => {
-      router.replace("./login");
-    });
-  }
-}, [user, navigationState]);
+    if (!user) {
+      requestAnimationFrame(() => {
+        router.replace("./login");
+      });
+    }
+  }, [user, navigationState]);
 
   /*
   LOCATION TRACKING
@@ -211,21 +224,29 @@ useEffect(() => {
 
           <View style={styles.messageBubble}>
 
-            {/* USER HEADER */}
+            {/* HEADER */}
 
             <View style={styles.userHeader}>
 
-              {selectedMessage.avatar && (
+              <View style={styles.userInfo}>
 
-                <Image
-                  source={{ uri: selectedMessage.avatar }}
-                  style={styles.avatar}
-                />
+                <View style={styles.avatarCircle}>
+                  {selectedMessage.avatar && (
+                    <Image
+                      source={{ uri: selectedMessage.avatar }}
+                      style={styles.avatar}
+                    />
+                  )}
+                </View>
 
-              )}
+                <Text style={styles.username}>
+                  {selectedMessage.username}
+                </Text>
 
-              <Text style={styles.username}>
-                {selectedMessage.username}
+              </View>
+
+              <Text style={styles.dateText}>
+                {formatDate(selectedMessage.createdAt)}
               </Text>
 
             </View>
@@ -343,20 +364,38 @@ const styles = StyleSheet.create({
 
   userHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
   },
 
+  userInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  avatarCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    overflow: "hidden",
+    marginRight: 8,
+    backgroundColor: "#eee",
+  },
+
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 10,
+    width: "100%",
+    height: "100%",
   },
 
   username: {
     fontWeight: "600",
     fontSize: 15,
+  },
+
+  dateText: {
+    fontSize: 12,
+    color: "#777",
   },
 
   messageImage: {
