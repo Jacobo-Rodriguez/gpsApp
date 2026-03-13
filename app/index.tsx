@@ -1,13 +1,16 @@
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import * as Location from "expo-location";
-import { useEffect, useRef, useState } from "react";
+
+import { useEffect, useRef, useState, } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
   Image,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 import { useRootNavigationState, useRouter } from "expo-router";
@@ -19,6 +22,9 @@ import { MAP_STYLES } from "../styles/mapStyles";
 import { MapMessage } from "../types/MapMessage";
 
 MapLibreGL.setAccessToken(null);
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const MENU_WIDTH = SCREEN_WIDTH * 0.5;
 
 export default function Home() {
 
@@ -40,6 +46,24 @@ export default function Home() {
     useState<MapMessage | null>(null);
 
   const cameraRef = useRef<any>(null);
+
+  /*
+  MENU STATE
+  */
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-MENU_WIDTH)).current;
+
+  function toggleMenu() {
+
+    Animated.timing(slideAnim, {
+      toValue: menuOpen ? -MENU_WIDTH : 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
+
+    setMenuOpen(!menuOpen);
+  }
 
   /*
   FORMAT DATE
@@ -162,6 +186,44 @@ export default function Home() {
 
     <View style={styles.container}>
 
+      {/* HAMBURGER BUTTON */}
+
+      <TouchableOpacity
+        style={styles.hamburger}
+        onPress={toggleMenu}
+      >
+        <Text style={styles.hamburgerText}>☰</Text>
+      </TouchableOpacity>
+
+      {/* SIDE MENU */}
+
+      <Animated.View
+        style={[
+          styles.sideMenu,
+          { transform: [{ translateX: slideAnim }] },
+        ]}
+      >
+
+        <Text style={styles.menuTitle}>Menu</Text>
+
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => router.push("./profile")}
+        >
+          <Text style={styles.menuButtonText}>Perfil</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => alert("Modo visual cambiado")}
+        >
+          <Text style={styles.menuButtonText}>
+            Alternar modo visual
+          </Text>
+        </TouchableOpacity>
+
+      </Animated.View>
+
       <MapLibreGL.MapView
         style={styles.map}
         mapStyle={MAP_STYLES.OSM_VOYAGER}
@@ -224,8 +286,6 @@ export default function Home() {
 
           <View style={styles.messageBubble}>
 
-            {/* HEADER */}
-
             <View style={styles.userHeader}>
 
               <View style={styles.userInfo}>
@@ -251,8 +311,6 @@ export default function Home() {
 
             </View>
 
-            {/* IMAGE */}
-
             {selectedMessage.imageUrl && (
 
               <Image
@@ -262,8 +320,6 @@ export default function Home() {
               />
 
             )}
-
-            {/* TEXT */}
 
             {selectedMessage.text ? (
 
@@ -327,6 +383,67 @@ const styles = StyleSheet.create({
     height: 32,
   },
 
+    hamburger: {
+    position: "absolute",
+    top: 60,
+    left: 20,
+    zIndex: 10,
+
+    padding: 8,
+
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+
+    elevation: 6
+  },
+
+  hamburgerText: {
+    color: "#fff",
+    fontSize: 32,
+    fontWeight: "700",
+
+    textShadowColor: "rgba(0,0,0,0.9)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 2
+  },
+
+  sideMenu: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: MENU_WIDTH,
+    backgroundColor: "#003c36d5",
+
+    paddingTop: 120,
+    paddingHorizontal: 20,
+
+    zIndex: 9,
+  },
+
+  menuTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 30,
+    color: "#fff"
+  },
+
+  menuButton: {
+    backgroundColor: "#2fd3c5",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    alignItems: "center",
+  },
+
+  menuButtonText: {
+    color: "#003c36",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
   fab: {
     position: "absolute",
     bottom: 24,
@@ -355,11 +472,10 @@ const styles = StyleSheet.create({
   },
 
   messageBubble: {
-    backgroundColor: "#fff",
+    backgroundColor: "#ffffffd3",
     padding: 16,
     borderRadius: 16,
     maxWidth: "90%",
-    elevation: 6,
   },
 
   userHeader: {

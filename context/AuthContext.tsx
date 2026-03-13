@@ -3,6 +3,8 @@ import { createContext, useContext, useState } from "react";
 type User = {
   id: string
   username: string
+  email?: string
+  password?: string
   avatar?: string
 }
 
