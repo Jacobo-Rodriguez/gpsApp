@@ -1,19 +1,23 @@
 import MapLibreGL from "@maplibre/maplibre-react-native";
 import * as Location from "expo-location";
+import MessageCard from "../components/MessageCard";
 
-import { useEffect, useRef, useState, } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View
 } from "react-native";
 
-import { useRootNavigationState, useRouter } from "expo-router";
+import {
+  useFocusEffect,
+  useRootNavigationState,
+  useRouter,
+} from "expo-router";
 
 import CreateMessageModal from "../components/CreateMessageModal";
 import { useAuth } from "../context/AuthContext";
@@ -27,35 +31,29 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 const MENU_WIDTH = SCREEN_WIDTH * 0.5;
 
 export default function Home() {
-
   const router = useRouter();
   const navigationState = useRootNavigationState();
 
   const { user } = useAuth();
-  const [ready, setReady] = useState(false);
 
-  const [coords, setCoords] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
+  const [ready, setReady] = useState(false);
+  const [coords, setCoords] = useState<any>(null);
 
   const [messages, setMessages] = useState<MapMessage[]>([]);
   const [showModal, setShowModal] = useState(false);
-
   const [selectedMessage, setSelectedMessage] =
     useState<MapMessage | null>(null);
 
   const cameraRef = useRef<any>(null);
 
-  /*
-  MENU STATE
-  */
+  /* 🔥 CONTROL REAL DEL MAPA */
+  const [mapReady, setMapReady] = useState(true);
 
+  /* MENU */
   const [menuOpen, setMenuOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-MENU_WIDTH)).current;
 
   function toggleMenu() {
-
     Animated.timing(slideAnim, {
       toValue: menuOpen ? -MENU_WIDTH : 0,
       duration: 250,
@@ -65,23 +63,15 @@ export default function Home() {
     setMenuOpen(!menuOpen);
   }
 
-  /*
-  FORMAT DATE
-  */
-
+  /* DATE */
   function formatDate(date: string) {
-    const d = new Date(date);
-
-    return d.toLocaleString("es-MX", {
+    return new Date(date).toLocaleString("es-MX", {
       dateStyle: "short",
       timeStyle: "short",
     });
   }
 
-  /*
-  REDIRECT TO LOGIN IF NOT AUTHENTICATED
-  */
-
+  /* AUTH */
   useEffect(() => {
     if (!navigationState?.key) return;
 
@@ -92,16 +82,11 @@ export default function Home() {
     }
   }, [user, navigationState]);
 
-  /*
-  LOCATION TRACKING
-  */
-
+  /* LOCATION */
   useEffect(() => {
-
     let sub: Location.LocationSubscription;
 
     (async () => {
-
       const { status } =
         await Location.requestForegroundPermissionsAsync();
 
@@ -121,20 +106,23 @@ export default function Home() {
           setReady(true);
         }
       );
-
     })();
 
     return () => sub?.remove();
-
   }, []);
 
-  /*
-  LOAD STORED MESSAGES
-  */
+  /* 🔥 FIX REAL */
+  useFocusEffect(
+    useCallback(() => {
+      loadMessages().then((data) => {
+        setMessages(data);
 
-  useEffect(() => {
-    loadMessages().then(setMessages);
-  }, []);
+        // 🔥 fuerza render correcto del mapa
+        setMapReady(false);
+        setTimeout(() => setMapReady(true), 50);
+      });
+    }, [])
+  );
 
   if (!ready || !coords) {
     return (
@@ -144,66 +132,41 @@ export default function Home() {
     );
   }
 
-  /*
-  CREATE MESSAGE
-  */
-
-  async function handleCreateMessage(
-    text: string,
-    imageUrl?: string
-  ) {
-
+  /* CREATE MESSAGE */
+  async function handleCreateMessage(text: string, imageUrl?: string) {
     if (!coords || !user) return;
 
     const newMessage: MapMessage = {
-
       id: Date.now().toString(),
-
       userId: user.id,
       username: user.username,
       avatar: user.avatar,
-
       latitude: coords.latitude,
       longitude: coords.longitude,
-
       text,
-
       createdAt: new Date().toISOString(),
-
       imageUrl,
-
     };
 
     await saveMessage(newMessage);
-
     setMessages((prev) => [...prev, newMessage]);
-
     setShowModal(false);
-
   }
 
   return (
-
     <View style={styles.container}>
-
-      {/* HAMBURGER BUTTON */}
-
-      <TouchableOpacity
-        style={styles.hamburger}
-        onPress={toggleMenu}
-      >
+      {/* HAMBURGER */}
+      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
         <Text style={styles.hamburgerText}>☰</Text>
       </TouchableOpacity>
 
       {/* SIDE MENU */}
-
       <Animated.View
         style={[
           styles.sideMenu,
           { transform: [{ translateX: slideAnim }] },
         ]}
       >
-
         <Text style={styles.menuTitle}>Menu</Text>
 
         <TouchableOpacity
@@ -215,143 +178,109 @@ export default function Home() {
 
         <TouchableOpacity
           style={styles.menuButton}
-          onPress={() => alert("Modo visual cambiado")}
+          onPress={() => alert("Modo visual")}
         >
           <Text style={styles.menuButtonText}>
             Alternar modo visual
           </Text>
         </TouchableOpacity>
-
       </Animated.View>
 
-      <MapLibreGL.MapView
-        style={styles.map}
-        mapStyle={MAP_STYLES.OSM_VOYAGER}
-        rotateEnabled={false}
-        pitchEnabled={false}
-        scrollEnabled={false}
-        zoomEnabled={false}
-        logoEnabled={false}
-        compassEnabled={false}
-        onPress={() => setSelectedMessage(null)}
-      >
+      {/* MAP */}
+      {mapReady && (
+        <MapLibreGL.MapView
+          style={styles.map}
+          mapStyle={MAP_STYLES.OSM_VOYAGER}
+          rotateEnabled={false}
+          pitchEnabled={false}
+          scrollEnabled={false}
+          zoomEnabled={false}
+          logoEnabled={false}
+          compassEnabled={false}
+          onPress={() => setSelectedMessage(null)}
+        >
+          {/* CAMERA */}
+          <MapLibreGL.Camera
+            ref={cameraRef}
+            followUserLocation
+            centerCoordinate={[
+              coords.longitude,
+              coords.latitude,
+            ]}
+            zoomLevel={18}
+          />
 
-        <MapLibreGL.Camera
-          ref={cameraRef}
-          followUserLocation
-          centerCoordinate={[
-            coords.longitude,
-            coords.latitude,
-          ]}
-          zoomLevel={18}
-          minZoomLevel={16}
-          maxZoomLevel={20}
-          animationDuration={500}
-        />
-
-        <MapLibreGL.UserLocation
-          visible
-          androidRenderMode="gps"
-          showsUserHeadingIndicator
-        />
-
-        {/* MESSAGE MARKERS */}
-
-        {messages.map((msg) => (
-
+          {/* USER DOT */}
           <MapLibreGL.PointAnnotation
-            key={msg.id}
-            id={msg.id}
-            coordinate={[msg.longitude, msg.latitude]}
-            onSelected={() => setSelectedMessage(msg)}
+            id="user-location"
+            coordinate={[coords.longitude, coords.latitude]}
           >
-
-            <Image
-              source={require("../assets/images/marker.png")}
-              style={styles.markerImage}
-              resizeMode="contain"
-            />
-
+            <View style={styles.userDot} />
           </MapLibreGL.PointAnnotation>
 
-        ))}
 
-      </MapLibreGL.MapView>
+          {/*MESSAGE MARKERS */}
+      <MapLibreGL.Images
+        images={{
+          marker: require("../assets/images/marker.png"),
+        }}
+      />
+    <MapLibreGL.ShapeSource
+      id="messages-source"
+      shape={{
+        type: "FeatureCollection",
+        features: messages.map((msg) => ({
+          type: "Feature",
+          id: msg.id,
+          properties: {
+            id: msg.id,
+          },
+          geometry: {
+            type: "Point",
+            coordinates: [msg.longitude, msg.latitude],
+          },
+        })),
+      }}
+            onPress={(e) => {
+        const feature = e.features?.[0] as {
+          properties?: { id?: string };
+        };
 
-      {/* MESSAGE POPUP */}
+        const id = feature?.properties?.id;
 
-      {selectedMessage && (
+        if (!id) return;
 
-        <View style={styles.messageOverlay}>
+        const msg = messages.find((m) => m.id === id);
 
-          <View style={styles.messageBubble}>
-
-            <View style={styles.userHeader}>
-
-              <View style={styles.userInfo}>
-
-                <View style={styles.avatarCircle}>
-                  {selectedMessage.avatar && (
-                    <Image
-                      source={{ uri: selectedMessage.avatar }}
-                      style={styles.avatar}
-                    />
-                  )}
-                </View>
-
-                <Text style={styles.username}>
-                  {selectedMessage.username}
-                </Text>
-
-              </View>
-
-              <Text style={styles.dateText}>
-                {formatDate(selectedMessage.createdAt)}
-              </Text>
-
-            </View>
-
-            {selectedMessage.imageUrl && (
-
-              <Image
-                source={{ uri: selectedMessage.imageUrl }}
-                style={styles.messageImage}
-                resizeMode="contain"
-              />
-
-            )}
-
-            {selectedMessage.text ? (
-
-              <Text style={styles.messageText}>
-                {selectedMessage.text}
-              </Text>
-
-            ) : null}
-
-            <TouchableOpacity
-              onPress={() => setSelectedMessage(null)}
-            >
-              <Text style={styles.closeText}>
-                Close
-              </Text>
-            </TouchableOpacity>
-
-          </View>
-
-        </View>
-
+        if (msg) setSelectedMessage(msg);
+      }}
+    >
+      <MapLibreGL.SymbolLayer
+        id="messages-layer"
+        style={{
+          iconImage: "marker",
+          iconSize: 0.09,
+          iconAllowOverlap: true,
+        }}
+      />
+    </MapLibreGL.ShapeSource>
+        </MapLibreGL.MapView>
       )}
 
-      {/* ADD MESSAGE BUTTON */}
+      {/* MESSAGE CARD */}
+      {selectedMessage && (
+        <MessageCard
+          message={selectedMessage}
+          onClose={() => setSelectedMessage(null)}
+        />
+      )}
 
+      {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setShowModal(true)}
       >
-
         <Text style={styles.fabText}>＋</Text>
-
       </TouchableOpacity>
 
       <CreateMessageModal
@@ -359,17 +288,13 @@ export default function Home() {
         onClose={() => setShowModal(false)}
         onSubmit={handleCreateMessage}
       />
-
     </View>
-
   );
-
 }
 
+/* STYLES */
 const styles = StyleSheet.create({
-
   container: { flex: 1 },
-
   map: { flex: 1 },
 
   loader: {
@@ -383,64 +308,55 @@ const styles = StyleSheet.create({
     height: 32,
   },
 
-    hamburger: {
+  userDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#007AFF",
+    borderWidth: 3,
+    borderColor: "#fff",
+  },
+
+  hamburger: {
     position: "absolute",
     top: 60,
     left: 20,
     zIndex: 10,
-
-    padding: 8,
-
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 3,
-
-    elevation: 6
   },
 
   hamburgerText: {
-    color: "#fff",
     fontSize: 32,
-    fontWeight: "700",
-
+    color: "#fff",
     textShadowColor: "rgba(0,0,0,0.9)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 2
+    textShadowRadius: 4,
   },
 
   sideMenu: {
     position: "absolute",
     top: 0,
     bottom: 0,
-    left: 0,
     width: MENU_WIDTH,
-    backgroundColor: "#003c36d5",
-
+    backgroundColor: "#003c36",
     paddingTop: 120,
     paddingHorizontal: 20,
-
     zIndex: 9,
   },
 
   menuTitle: {
+    color: "#fff",
     fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 30,
-    color: "#fff"
+    marginBottom: 20,
   },
 
   menuButton: {
     backgroundColor: "#2fd3c5",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    alignItems: "center",
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 12,
   },
 
   menuButtonText: {
     color: "#003c36",
-    fontSize: 16,
     fontWeight: "600",
   },
 
@@ -454,82 +370,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 6,
   },
 
   fabText: {
     color: "#fff",
-    fontSize: 32,
-    lineHeight: 32,
+    fontSize: 30,
   },
-
-  messageOverlay: {
-    position: "absolute",
-    bottom: 100,
-    left: 20,
-    right: 20,
-    alignItems: "center",
-  },
-
-  messageBubble: {
-    backgroundColor: "#ffffffd3",
-    padding: 16,
-    borderRadius: 16,
-    maxWidth: "90%",
-  },
-
-  userHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-
-  userInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    overflow: "hidden",
-    marginRight: 8,
-    backgroundColor: "#eee",
-  },
-
-  avatar: {
-    width: "100%",
-    height: "100%",
-  },
-
-  username: {
-    fontWeight: "600",
-    fontSize: 15,
-  },
-
-  dateText: {
-    fontSize: 12,
-    color: "#777",
-  },
-
-  messageImage: {
-    width: 250,
-    height: 250,
-    marginBottom: 10,
-    borderRadius: 12,
-  },
-
-  messageText: {
-    fontSize: 16,
-    textAlign: "center",
-  },
-
-  closeText: {
-    marginTop: 10,
-    textAlign: "center",
-    color: "#999",
-  },
-
 });
