@@ -2,15 +2,17 @@ import { router } from "expo-router";
 import { useState } from "react";
 import {
   Image,
+  Keyboard,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { LinearGradient } from "expo-linear-gradient";
-
 import { registerUser } from "../storage/users";
 
 export default function RegisterScreen() {
@@ -37,97 +39,100 @@ export default function RegisterScreen() {
   }
 
   return (
-
-    <LinearGradient
-      colors={["#003c36", "#0b0f1a"]}
-      style={styles.container}
-    >
-
-      {/* HEADER */}
-
-      <View style={styles.header}>
-
-        <View>
-          <Text style={styles.hello}>Hello.</Text>
-          <Text style={styles.welcome}>
-            Create your account
-          </Text>
-        </View>
-
-        <Image
-          source={require("../assets/images/logo.png")}
-          style={styles.logo}
-        />
-
-      </View>
-
-      {/* FORM */}
-
-      <View style={styles.form}>
-
-        {/* TITLE */}
-
-        <Text style={styles.registerTitle}>
-          Register
-        </Text>
-
-        <Text style={styles.label}>Username</Text>
-
-        <TextInput
-          placeholder="Enter username"
-          placeholderTextColor="#999"
-          style={styles.input}
-          onChangeText={setUsername}
-        />
-
-        <Text style={styles.label}>Email</Text>
-
-        <TextInput
-          placeholder="Enter email"
-          placeholderTextColor="#999"
-          style={styles.input}
-          onChangeText={setEmail}
-        />
-
-        <Text style={styles.label}>Password</Text>
-
-        <TextInput
-          placeholder="Enter password"
-          placeholderTextColor="#999"
-          secureTextEntry
-          style={styles.input}
-          onChangeText={setPassword}
-        />
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleRegister}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <LinearGradient
+        colors={["#003c36", "#0b0f1a"]}
+        style={styles.container}
+      >
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.scrollContainer}
+          enableOnAndroid={true}
+          extraScrollHeight={40}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.buttonText}>
-            Create Account
-          </Text>
-        </TouchableOpacity>
 
-        <View style={styles.loginRow}>
+          {/* HEADER */}
+          <View style={styles.header}>
 
-          <Text style={{ color: "#aaa" }}>
-            Already have an account?
-          </Text>
+            <View>
+              <Text style={styles.hello}>Hello.</Text>
+              <Text style={styles.welcome}>
+                Create your account
+              </Text>
+            </View>
 
-          <TouchableOpacity
-            onPress={() => router.push("./login")}
-          >
-            <Text style={styles.loginLink}>
-              Log in
+            <Image
+              source={require("../assets/images/logo.png")}
+              style={styles.logo}
+            />
+
+          </View>
+
+          {/* FORM */}
+          <View style={styles.form}>
+
+            <Text style={styles.registerTitle}>
+              Register
             </Text>
-          </TouchableOpacity>
 
-        </View>
+            <Text style={styles.label}>Username</Text>
 
-      </View>
+            <TextInput
+              placeholder="Enter username"
+              placeholderTextColor="#999"
+              style={styles.input}
+              onChangeText={setUsername}
+            />
 
-    </LinearGradient>
+            <Text style={styles.label}>Email</Text>
 
+            <TextInput
+              placeholder="Enter email"
+              placeholderTextColor="#999"
+              style={styles.input}
+              onChangeText={setEmail}
+            />
+
+            <Text style={styles.label}>Password</Text>
+
+            <TextInput
+              placeholder="Enter password"
+              placeholderTextColor="#999"
+              secureTextEntry
+              style={styles.input}
+              onChangeText={setPassword}
+            />
+
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleRegister}
+            >
+              <Text style={styles.buttonText}>
+                Create Account
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.loginRow}>
+
+              <Text style={{ color: "#aaa" }}>
+                Already have an account?
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => router.push("./login")}
+              >
+                <Text style={styles.loginLink}>
+                  Log in
+                </Text>
+              </TouchableOpacity>
+
+            </View>
+
+          </View>
+
+        </KeyboardAwareScrollView>
+      </LinearGradient>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -135,6 +140,10 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
+  },
+
+  scrollContainer: {
+    flexGrow: 1,
     padding: 24,
     justifyContent: "center",
   },
@@ -182,6 +191,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
     marginBottom: 16,
+    color: "#000",
   },
 
   button: {

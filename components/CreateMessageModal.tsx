@@ -2,18 +2,21 @@ import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
   Image,
+  Keyboard,
   Modal,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type Props = {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (text: string, imageUrl?: string) => void; // 👈 updated
+  onSubmit: (text: string, imageUrl?: string) => void;
 };
 
 export default function CreateMessageModal({
@@ -48,7 +51,6 @@ export default function CreateMessageModal({
 
     onSubmit(text.trim(), imageUrl ?? undefined);
 
-    // reset state
     setText("");
     setimageUrl(null);
   }
@@ -61,58 +63,71 @@ export default function CreateMessageModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.overlay}>
-        <View style={styles.box}>
-          <Text style={styles.title}>New message</Text>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Write something..."
-            value={text}
-            onChangeText={setText}
-            multiline
-          />
-
-          {/* 📷 IMAGE BUTTON */}
-          <TouchableOpacity
-            style={styles.imageButton}
-            onPress={pickImage}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.overlay}>
+          
+          <KeyboardAwareScrollView
+            contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }}
+            enableOnAndroid
+            extraScrollHeight={120} // 🔥 clave para que botones no queden ocultos
+            keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.imageButtonText}>
-              {imageUrl ? "Change Image" : "Add Image"}
-            </Text>
-          </TouchableOpacity>
+            <View style={styles.box}>
+              <Text style={styles.title}>New message</Text>
 
-          {/* 🖼 IMAGE PREVIEW */}
-          {imageUrl && (
-            <View style={styles.previewContainer}>
-              <Image
-                source={{ uri: imageUrl }}
-                style={styles.previewImage}
-                resizeMode="contain"
+              <TextInput
+                style={styles.input}
+                placeholder="Write something..."
+                value={text}
+                onChangeText={setText}
+                multiline
               />
 
+              {/* IMAGE BUTTON */}
               <TouchableOpacity
-                onPress={() => setimageUrl(null)}
+                style={styles.imageButton}
+                onPress={pickImage}
               >
-                <Text style={styles.removeImage}>
-                  Remove Image
+                <Text style={styles.imageButtonText}>
+                  {imageUrl ? "Change Image" : "Add Image"}
                 </Text>
               </TouchableOpacity>
+
+              {/* IMAGE PREVIEW */}
+              {imageUrl && (
+                <View style={styles.previewContainer}>
+                  <Image
+                    source={{ uri: imageUrl }}
+                    style={styles.previewImage}
+                    resizeMode="contain"
+                  />
+
+                  <TouchableOpacity
+                    onPress={() => setimageUrl(null)}
+                  >
+                    <Text style={styles.removeImage}>
+                      Remove Image
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* ACTIONS */}
+              <View style={styles.actions}>
+                <TouchableOpacity onPress={handleClose}>
+                  <Text style={styles.cancel}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={handleSave}>
+                  <Text style={styles.save}>Save</Text>
+                </TouchableOpacity>
+              </View>
+
             </View>
-          )}
+          </KeyboardAwareScrollView>
 
-          <View style={styles.actions}>
-            <TouchableOpacity onPress={handleClose}>
-              <Text style={styles.cancel}>Cancel</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleSave}>
-              <Text style={styles.save}>Save</Text>
-            </TouchableOpacity>
-          </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -121,19 +136,25 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "flex-end",
   },
+
   box: {
-    backgroundColor: "#fff",
+    backgroundColor: "#003c36ea",
     padding: 20,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+    paddingBottom: 40,
+
   },
+
   title: {
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 10,
+        color: "#ffffff",
+
   },
+
   input: {
     minHeight: 80,
     borderWidth: 1,
@@ -141,6 +162,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     textAlignVertical: "top",
+    color: "#ffffff",
   },
 
   imageButton: {
@@ -162,7 +184,7 @@ const styles = StyleSheet.create({
   },
 
   previewImage: {
-    width: 250,   // ~60% visual size
+    width: 250,
     height: 250,
     marginBottom: 6,
   },
@@ -181,12 +203,13 @@ const styles = StyleSheet.create({
   cancel: {
     color: "#999",
     fontSize: 16,
+    paddingBottom: 30,
   },
 
   save: {
-    color: "#000",
+    color: "#1eb896",
     fontSize: 16,
     fontWeight: "600",
+    paddingBottom: 30,
   },
-
 });

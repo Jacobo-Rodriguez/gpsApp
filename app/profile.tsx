@@ -1,13 +1,16 @@
 import { useCallback, useState } from "react";
 import {
-    Alert,
-    Image,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Image,
+  Keyboard,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
@@ -18,7 +21,6 @@ import { useAuth } from "../context/AuthContext";
 import { loadMessages } from "../storage/messages";
 
 export default function Profile() {
-
   const { user, setUser } = useAuth();
 
   const [username, setUsername] = useState(user?.username || "");
@@ -29,10 +31,6 @@ export default function Profile() {
   const [publishedMessages, setPublishedMessages] = useState(0);
   const [readMessages, setReadMessages] = useState(0);
 
-  /*
-  LOAD STATS EVERY TIME SCREEN OPENS
-  */
-
   useFocusEffect(
     useCallback(() => {
       loadStats();
@@ -40,7 +38,6 @@ export default function Profile() {
   );
 
   async function loadStats() {
-
     const messages = await loadMessages();
 
     const myMessages = messages.filter(
@@ -48,18 +45,10 @@ export default function Profile() {
     );
 
     setPublishedMessages(myMessages.length);
-
-    /* placeholder mensajes leídos */
     setReadMessages(messages.length * 2);
-
   }
 
-  /*
-  PICK AVATAR
-  */
-
   async function pickImage() {
-
     const permission =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -73,172 +62,151 @@ export default function Profile() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.7,
         allowsEditing: true,
-        aspect: [1, 1]
+        aspect: [1, 1],
       });
 
     if (!result.canceled) {
-
       const uri = result.assets[0].uri;
-
       setAvatar(uri);
-
     }
-
   }
 
-  /*
-  SAVE PROFILE
-  */
-
   function handleSave() {
-
     if (!user) return;
 
     setUser({
       ...user,
-        username,
-        email,
-        password,
-        avatar
+      username,
+      email,
+      password,
+      avatar,
     });
 
     Alert.alert("Perfil actualizado");
-
   }
 
   return (
-
     <LinearGradient
       colors={["#003c36", "#0b0f1a"]}
-      style={styles.container}
+      style={{ flex: 1 }}
     >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAwareScrollView
+          contentContainerStyle={styles.container}
+          enableOnAndroid
+          extraScrollHeight={100}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* BACK BUTTON */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.backText}>←</Text>
+          </TouchableOpacity>
 
-      {/* BACK BUTTON */}
+          <Text style={styles.title}>Perfil</Text>
 
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-      >
-        <Text style={styles.backText}>←</Text>
-      </TouchableOpacity>
+          {/* AVATAR */}
+          <View style={styles.avatarRow}>
+            <TouchableOpacity onPress={pickImage}>
+              <Image
+                source={
+                  avatar
+                    ? { uri: avatar }
+                    : require("../assets/images/default-avatar.webp")
+                }
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
 
-      <Text style={styles.title}>Perfil</Text>
+            <Text style={styles.usernamePreview}>
+              {username}
+            </Text>
+          </View>
 
-      {/* AVATAR */}
+          {/* STATS */}
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>
+                MENSAJES PUBLICADOS
+              </Text>
+              <Text style={styles.statNumber}>
+                {publishedMessages}
+              </Text>
+            </View>
 
-      <View style={styles.avatarRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>
+                MENSAJES LEIDOS
+              </Text>
+              <Text style={styles.statNumber}>
+                {readMessages}
+              </Text>
+            </View>
+          </View>
 
-        <TouchableOpacity onPress={pickImage}>
+          {/* BUTTON */}
+          <TouchableOpacity style={styles.secondaryButton}>
+            <Text style={styles.secondaryButtonText}>
+              Ver lista de mensajes publicados
+            </Text>
+          </TouchableOpacity>
 
-          <Image
-            source={
-              avatar
-                ? { uri: avatar }
-                : require("../assets/images/default-avatar.webp")
-            }
-            style={styles.avatar}
+          {/* FORM */}
+          <Text style={styles.label}>Nombre</Text>
+          <TextInput
+            value={username}
+            onChangeText={setUsername}
+            style={styles.input}
           />
 
-        </TouchableOpacity>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+          />
 
-        <Text style={styles.usernamePreview}>
-          {username}
-        </Text>
+          <Text style={styles.label}>Password</Text>
+          <TextInput
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={styles.input}
+          />
 
-      </View>
-
-      {/* STATS */}
-
-      <View style={styles.statsRow}>
-
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>
-            MENSAJES PUBLICADOS
-          </Text>
-          <Text style={styles.statNumber}>
-            {publishedMessages}
-          </Text>
-        </View>
-
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>
-            MENSAJES LEIDOS
-          </Text>
-          <Text style={styles.statNumber}>
-            {readMessages}
-          </Text>
-        </View>
-
-      </View>
-
-      {/* BUTTON */}
-
-      <TouchableOpacity style={styles.secondaryButton}>
-        <Text style={styles.secondaryButtonText}>
-          Ver lista de mensajes publicados
-        </Text>
-      </TouchableOpacity>
-
-      {/* USERNAME */}
-
-      <Text style={styles.label}>Nombre</Text>
-
-      <TextInput
-        value={username}
-        onChangeText={setUsername}
-        style={styles.input}
-      />
-
-      <Text style={styles.label}>Email</Text>
-
-        <TextInput
-        value={email}
-        onChangeText={setEmail}
-        style={styles.input}
-        />
-
-        <Text style={styles.label}>Password</Text>
-
-        <TextInput
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={styles.input}
-        />
-
-      {/* SAVE */}
-
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={handleSave}
-      >
-        <Text style={styles.saveText}>
-          Save changes
-        </Text>
-      </TouchableOpacity>
-
+          {/* SAVE */}
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSave}
+          >
+            <Text style={styles.saveText}>
+              Save changes
+            </Text>
+          </TouchableOpacity>
+        </KeyboardAwareScrollView>
+      </TouchableWithoutFeedback>
     </LinearGradient>
-
   );
-
 }
 
 const styles = StyleSheet.create({
-
   container: {
-    flex: 1,
-    padding: 24
+    padding: 24,
+    paddingBottom: 120, // 🔥 espacio extra para botones + teclado
   },
 
   backButton: {
     position: "absolute",
     top: 60,
-    left: 20
+    left: 20,
+    zIndex: 10,
   },
 
   backText: {
     fontSize: 28,
-    color: "#fff"
+    color: "#fff",
   },
 
   title: {
@@ -246,32 +214,32 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "700",
     marginTop: 80,
-    marginBottom: 20
+    marginBottom: 20,
   },
 
   avatarRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 30
+    marginBottom: 30,
   },
 
   avatar: {
     width: 90,
     height: 90,
     borderRadius: 45,
-    marginRight: 16
+    marginRight: 16,
   },
 
   usernamePreview: {
-    color: "#fff",
+    color: "#ffffff",
     fontSize: 18,
-    fontWeight: "600"
+    fontWeight: "600",
   },
 
   statsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20
+    marginBottom: 20,
   },
 
   statBox: {
@@ -279,17 +247,17 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 10,
     width: "48%",
-    alignItems: "center"
+    alignItems: "center",
   },
 
   statLabel: {
     fontSize: 11,
-    color: "#333"
+    color: "#333",
   },
 
   statNumber: {
     fontSize: 26,
-    fontWeight: "700"
+    fontWeight: "700",
   },
 
   secondaryButton: {
@@ -297,35 +265,36 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 30
+    marginBottom: 30,
   },
 
   secondaryButtonText: {
-    color: "#fff"
+    color: "#fff",
   },
 
   label: {
     color: "#fff",
-    marginBottom: 6
+    marginBottom: 6,
   },
 
   input: {
     backgroundColor: "#e0e0e0",
     padding: 14,
     borderRadius: 8,
-    marginBottom: 30
+    marginBottom: 20,
+    color: "#000",
   },
 
   saveButton: {
     backgroundColor: "#2fd3c5",
     padding: 16,
     borderRadius: 10,
-    alignItems: "center"
+    alignItems: "center",
+    marginTop: 10,
   },
 
   saveText: {
     fontSize: 16,
-    fontWeight: "600"
-  }
-
+    fontWeight: "600",
+  },
 });
